@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Code Queue">
+<meta name="theme-color" content="#1A2B4A">
+<title>Code Queue</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1A2B4A;--gold:#B8933A;--violet:#AD278C;
+  --bg:#f5f5f7;--card:#fff;--text:#222;--text-muted:#666;
+  --radius:12px;--shadow:0 2px 8px rgba(0,0,0,.1);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit;border:none;outline:none;background:none}
+button{cursor:pointer;-webkit-user-select:none;user-select:none}
+
+/* Header */
+.header{background:var(--navy);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.header h1{flex:1;font-size:18px;font-weight:600;letter-spacing:.3px}
+.header button{color:#fff;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.header button:active{background:rgba(255,255,255,.15)}
+.sync-spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Offline banner */
+.offline-banner{background:#e74c3c;color:#fff;text-align:center;padding:6px;font-size:13px;display:none}
+.offline-banner.visible{display:block}
+
+/* Tabs */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;background:#fff;border-bottom:1px solid #e0e0e0;padding:0 8px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:10px 16px;font-size:14px;font-weight:500;color:var(--text-muted);border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px;min-height:44px}
+.tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.tab .badge{background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:20px;text-align:center}
+.tab-add{color:var(--violet);font-size:18px;font-weight:700;padding:10px 14px}
+
+/* Filters */
+.filters{display:flex;gap:8px;padding:10px 16px;background:var(--bg)}
+.chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;background:var(--card);color:var(--text-muted);border:1px solid #ddd;min-height:34px}
+.chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* Todo list */
+.todo-list{padding:8px 16px 120px;display:flex;flex-direction:column;gap:8px}
+.todo-item{background:var(--card);border-radius:var(--radius);padding:12px;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .2s,opacity .2s}
+.todo-item.removing{transform:translateX(-100%);opacity:0}
+.todo-check{width:24px;height:24px;border:2px solid #ccc;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;min-width:24px;min-height:24px;padding:10px}
+.todo-check.checked{background:var(--gold);border-color:var(--gold)}
+.todo-check.checked::after{content:'';display:block;width:6px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
+.todo-body{flex:1;min-width:0}
+.todo-text{font-size:15px;line-height:1.4;word-break:break-word}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--text-muted)}
+.todo-date{font-size:11px;color:var(--text-muted);margin-top:4px}
+.todo-delete{color:#e74c3c;font-size:20px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%}
+.todo-delete:active{background:rgba(231,76,60,.1)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:15px}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(24px + var(--safe-bottom));right:20px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(184,147,58,.4);z-index:90;transition:transform .15s}
+.fab:active{transform:scale(.92)}
+
+/* Bottom sheets and overlays */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:16px 16px 0 0;padding:20px 16px calc(20px + var(--safe-bottom));z-index:210;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:80vh;overflow-y:auto}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:#ccc;border-radius:2px;margin:0 auto 16px}
+.sheet h2{font-size:17px;font-weight:600;margin-bottom:16px}
+.sheet textarea,.sheet input[type="text"],.sheet input[type="password"]{width:100%;padding:12px;border:1px solid #ddd;border-radius:var(--radius);font-size:15px;background:var(--bg);resize:none;min-height:44px}
+.sheet textarea{min-height:80px}
+.sheet select{width:100%;padding:12px;border:1px solid #ddd;border-radius:var(--radius);font-size:15px;background:var(--bg);min-height:44px;-webkit-appearance:none;appearance:none}
+.sheet label{display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin:12px 0 4px}
+.sheet label:first-of-type{margin-top:0}
+.btn{display:block;width:100%;padding:14px;border-radius:var(--radius);font-size:16px;font-weight:600;text-align:center;min-height:48px}
+.btn-gold{background:var(--gold);color:#fff;margin-top:16px}
+.btn-gold:active{background:#a07e2f}
+.btn-violet{background:var(--violet);color:#fff;margin-top:12px}
+.btn-violet:active{background:#8c1f70}
+.btn-danger{background:#e74c3c;color:#fff;margin-top:12px}
+.btn-danger:active{background:#c0392b}
+.btn-outline{border:1px solid #ddd;color:var(--text-muted);margin-top:12px}
+
+/* Settings overlay */
+.settings{position:fixed;inset:0;background:var(--bg);z-index:300;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);overflow-y:auto;padding:0 16px calc(40px + var(--safe-bottom))}
+.settings.open{transform:translateX(0)}
+.settings-header{display:flex;align-items:center;gap:12px;padding:16px 0;position:sticky;top:0;background:var(--bg);z-index:1}
+.settings-header h2{flex:1;font-size:18px}
+.settings-header button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--violet);font-weight:600}
+.last-sync{font-size:12px;color:var(--text-muted);margin-top:16px;text-align:center}
+
+/* Setup screen */
+.setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.setup-card{width:100%;max-width:380px;background:var(--card);border-radius:var(--radius);padding:28px 20px;box-shadow:var(--shadow)}
+.setup-card h1{color:var(--navy);font-size:22px;text-align:center;margin-bottom:4px}
+.setup-card p{color:var(--text-muted);font-size:13px;text-align:center;margin-bottom:20px}
+.setup-card label{display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin:12px 0 4px}
+.setup-card label:first-of-type{margin-top:0}
+.setup-card input{width:100%;padding:12px;border:1px solid #ddd;border-radius:var(--radius);font-size:15px;background:var(--bg);min-height:44px}
+.setup-error{color:#e74c3c;font-size:13px;margin-top:8px;text-align:center;min-height:20px}
+
+/* Utility */
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div id="screen-setup" class="setup">
+  <div class="setup-card">
+    <h1>Code Queue</h1>
+    <p>Connect to a GitHub repo to sync your todos.</p>
+    <label for="s-pat">Personal Access Token</label>
+    <input type="password" id="s-pat" placeholder="ghp_...">
+    <label for="s-owner">Repository Owner</label>
+    <input type="text" id="s-owner" placeholder="your-username">
+    <label for="s-repo">Repository</label>
+    <input type="text" id="s-repo" value="claude-todos-data">
+    <label for="s-branch">Branch</label>
+    <input type="text" id="s-branch" value="main">
+    <label for="s-path">File Path</label>
+    <input type="text" id="s-path" value="todos.json">
+    <button class="btn btn-gold" id="btn-connect">Connect</button>
+    <div class="setup-error" id="setup-error"></div>
+  </div>
+</div>
+
+<!-- Main Screen -->
+<div id="screen-main" class="hidden">
+  <div class="offline-banner" id="offline-banner">You are offline. Changes will sync when reconnected.</div>
+  <div class="header">
+    <h1>Code Queue</h1>
+    <button id="btn-sync" aria-label="Sync"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></button>
+    <button id="btn-settings" aria-label="Settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="filters" id="filters">
+    <button class="chip active" data-filter="backlog">Backlog</button>
+    <button class="chip" data-filter="done">Done</button>
+    <button class="chip" data-filter="all">All</button>
+  </div>
+  <div class="todo-list" id="todo-list"></div>
+  <button class="fab" id="btn-add" aria-label="Add todo">+</button>
+</div>
+
+<!-- Add Todo Sheet -->
+<div class="overlay" id="overlay-add"></div>
+<div class="sheet" id="sheet-add">
+  <div class="sheet-handle"></div>
+  <h2>Add Todo</h2>
+  <textarea id="add-text" placeholder="What needs to be done?"></textarea>
+  <label for="add-project">Project</label>
+  <select id="add-project"></select>
+  <button class="btn btn-gold" id="btn-add-save">Add</button>
+</div>
+
+<!-- New Project Sheet -->
+<div class="overlay" id="overlay-project"></div>
+<div class="sheet" id="sheet-project">
+  <div class="sheet-handle"></div>
+  <h2>New Project</h2>
+  <input type="text" id="project-name" placeholder="project-name">
+  <button class="btn btn-gold" id="btn-project-save">Create</button>
+</div>
+
+<!-- Settings Overlay -->
+<div class="settings" id="screen-settings">
+  <div class="settings-header">
+    <h2>Settings</h2>
+    <button id="btn-settings-close">Close</button>
+  </div>
+  <label for="cfg-pat">Personal Access Token</label>
+  <input type="password" id="cfg-pat">
+  <label for="cfg-owner">Owner</label>
+  <input type="text" id="cfg-owner">
+  <label for="cfg-repo">Repository</label>
+  <input type="text" id="cfg-repo">
+  <label for="cfg-branch">Branch</label>
+  <input type="text" id="cfg-branch">
+  <label for="cfg-path">File Path</label>
+  <input type="text" id="cfg-path">
+  <button class="btn btn-violet" id="btn-settings-save">Save</button>
+  <button class="btn btn-danger" id="btn-signout">Sign Out</button>
+  <div class="last-sync" id="last-sync"></div>
+</div>
+
+<script>
+'use strict';
+
+// -- State management (immutable pattern) --
+let state = {
+  screen: 'setup',
+  config: null,
+  projects: {},
+  sha: null,
+  activeProject: null,
+  filter: 'backlog',
+  syncing: false,
+  lastSync: null,
+  pendingChanges: false,
+  sheetAdd: false,
+  sheetProject: false,
+  settingsOpen: false,
+  online: navigator.onLine
+};
+
+function setState(updates) {
+  state = Object.assign({}, state, updates);
+  render();
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// -- GitHub API --
+function apiUrl() {
+  const c = state.config;
+  return 'https://api.github.com/repos/' + c.owner + '/' + c.repo + '/contents/' + c.path + '?ref=' + c.branch;
+}
+
+function apiHeaders() {
+  return {
+    'Authorization': 'Bearer ' + state.config.pat,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json'
+  };
+}
+
+async function fetchTodos() {
+  const resp = await fetch(apiUrl(), { headers: apiHeaders() });
+  if (resp.status === 404) {
+    return { projects: {}, sha: null };
+  }
+  if (!resp.ok) throw new Error('GitHub API error: ' + resp.status);
+  const data = await resp.json();
+  const content = JSON.parse(atob(data.content.replace(/\n/g, '')));
+  return { projects: content.projects || {}, sha: data.sha };
+}
+
+async function pushTodos(projects, currentSha, retries) {
+  retries = retries || 0;
+  const body = JSON.stringify({ projects: projects }, null, 2);
+  const payload = {
+    message: 'Update todos ' + new Date().toISOString(),
+    content: btoa(unescape(encodeURIComponent(body))),
+    branch: state.config.branch
+  };
+  if (currentSha) payload.sha = currentSha;
+
+  const resp = await fetch(apiUrl(), {
+    method: 'PUT',
+    headers: apiHeaders(),
+    body: JSON.stringify(payload)
+  });
+
+  if (resp.status === 409 && retries < 3) {
+    const fresh = await fetchTodos();
+    const merged = mergeTodos(projects, fresh.projects);
+    return pushTodos(merged, fresh.sha, retries + 1);
+  }
+  if (!resp.ok) throw new Error('Push failed: ' + resp.status);
+  const result = await resp.json();
+  return result.content.sha;
+}
+
+function mergeTodos(local, remote) {
+  const allProjectNames = new Set([
+    ...Object.keys(local),
+    ...Object.keys(remote)
+  ]);
+  const merged = {};
+  allProjectNames.forEach(function(name) {
+    const localItems = local[name] || [];
+    const remoteItems = remote[name] || [];
+    const byId = {};
+    localItems.forEach(function(item) { byId[item.id] = item; });
+    remoteItems.forEach(function(item) { byId[item.id] = item; }); // remote wins
+    merged[name] = Object.values(byId);
+  });
+  return merged;
+}
+
+async function sync() {
+  if (state.syncing || !state.config) return;
+  setState({ syncing: true });
+  try {
+    if (state.pendingChanges) {
+      const newSha = await pushTodos(state.projects, state.sha);
+      const now = new Date().toISOString();
+      localStorage.setItem('cq_projects', JSON.stringify(state.projects));
+      localStorage.setItem('cq_sha', newSha);
+      localStorage.setItem('cq_lastSync', now);
+      setState({ sha: newSha, syncing: false, pendingChanges: false, lastSync: now });
+    } else {
+      const result = await fetchTodos();
+      const now = new Date().toISOString();
+      localStorage.setItem('cq_projects', JSON.stringify(result.projects));
+      localStorage.setItem('cq_sha', result.sha);
+      localStorage.setItem('cq_lastSync', now);
+      const activeProject = state.activeProject;
+      const validProject = result.projects[activeProject] ? activeProject : Object.keys(result.projects)[0] || null;
+      setState({ projects: result.projects, sha: result.sha, syncing: false, lastSync: now, activeProject: validProject });
+    }
+  } catch (e) {
+    console.error('Sync error:', e);
+    setState({ syncing: false });
+  }
+}
+
+// -- Render --
+function render() {
+  var setupEl = document.getElementById('screen-setup');
+  var mainEl = document.getElementById('screen-main');
+
+  if (state.screen === 'setup') {
+    setupEl.classList.remove('hidden');
+    mainEl.classList.add('hidden');
+    return;
+  }
+
+  setupEl.classList.add('hidden');
+  mainEl.classList.remove('hidden');
+
+  // Offline banner
+  document.getElementById('offline-banner').classList.toggle('visible', !state.online);
+
+  // Sync button
+  var syncSvg = document.querySelector('#btn-sync svg');
+  if (syncSvg) syncSvg.classList.toggle('sync-spin', state.syncing);
+
+  // Tabs
+  renderTabs();
+
+  // Todo list
+  renderTodos();
+
+  // Sheets
+  toggleSheet('overlay-add', 'sheet-add', state.sheetAdd);
+  toggleSheet('overlay-project', 'sheet-project', state.sheetProject);
+
+  // Settings
+  document.getElementById('screen-settings').classList.toggle('open', state.settingsOpen);
+  if (state.settingsOpen && state.config) {
+    document.getElementById('cfg-pat').value = state.config.pat;
+    document.getElementById('cfg-owner').value = state.config.owner;
+    document.getElementById('cfg-repo').value = state.config.repo;
+    document.getElementById('cfg-branch').value = state.config.branch;
+    document.getElementById('cfg-path').value = state.config.path;
+  }
+  var syncText = state.lastSync ? 'Last synced: ' + new Date(state.lastSync).toLocaleString() : 'Never synced';
+  document.getElementById('last-sync').textContent = syncText;
+
+  // Add sheet project dropdown
+  if (state.sheetAdd) {
+    var sel = document.getElementById('add-project');
+    var names = Object.keys(state.projects);
+    sel.innerHTML = names.map(function(n) {
+      var selected = n === state.activeProject ? ' selected' : '';
+      return '<option value="' + n + '"' + selected + '>' + n + '</option>';
+    }).join('');
+  }
+}
+
+function renderTabs() {
+  var tabsEl = document.getElementById('tabs');
+  var names = Object.keys(state.projects);
+  var html = '';
+  names.forEach(function(name) {
+    var active = name === state.activeProject ? ' active' : '';
+    var backlogCount = (state.projects[name] || []).filter(function(t) { return t.status === 'backlog'; }).length;
+    var badge = backlogCount > 0 ? '<span class="badge">' + backlogCount + '</span>' : '';
+    html += '<button class="tab' + active + '" data-project="' + name + '">' + name + badge + '</button>';
+  });
+  html += '<button class="tab tab-add" id="tab-add-project">+</button>';
+  tabsEl.innerHTML = html;
+}
+
+function renderTodos() {
+  var listEl = document.getElementById('todo-list');
+  var items = state.projects[state.activeProject] || [];
+  var filtered = items;
+  if (state.filter === 'backlog') {
+    filtered = items.filter(function(t) { return t.status === 'backlog'; });
+  } else if (state.filter === 'done') {
+    filtered = items.filter(function(t) { return t.status === 'done'; });
+  }
+
+  if (filtered.length === 0) {
+    var msg = state.activeProject ? 'No items to show.' : 'Create a project to get started.';
+    listEl.innerHTML = '<div class="empty-state">' + msg + '</div>';
+    return;
+  }
+
+  // Sort: backlog first, then by added date descending
+  filtered = filtered.slice().sort(function(a, b) {
+    if (a.status !== b.status) return a.status === 'backlog' ? -1 : 1;
+    return new Date(b.added) - new Date(a.added);
+  });
+
+  listEl.innerHTML = filtered.map(function(item) {
+    var doneClass = item.status === 'done' ? ' done' : '';
+    var checkedClass = item.status === 'done' ? ' checked' : '';
+    var dateStr = new Date(item.added).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return '<div class="todo-item' + doneClass + '" data-id="' + item.id + '">' +
+      '<button class="todo-check' + checkedClass + '" data-action="toggle" data-id="' + item.id + '"></button>' +
+      '<div class="todo-body"><div class="todo-text">' + escapeHtml(item.text) + '</div>' +
+      '<div class="todo-date">' + dateStr + '</div></div>' +
+      '<button class="todo-delete" data-action="delete" data-id="' + item.id + '">&times;</button>' +
+      '</div>';
+  }).join('');
+}
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function toggleSheet(overlayId, sheetId, open) {
+  document.getElementById(overlayId).classList.toggle('open', open);
+  document.getElementById(sheetId).classList.toggle('open', open);
+}
+
+// -- Actions (immutable updates) --
+function toggleTodo(id) {
+  var proj = state.activeProject;
+  var updated = Object.assign({}, state.projects);
+  updated[proj] = (updated[proj] || []).map(function(item) {
+    if (item.id !== id) return item;
+    return Object.assign({}, item, { status: item.status === 'done' ? 'backlog' : 'done' });
+  });
+  localStorage.setItem('cq_projects', JSON.stringify(updated));
+  setState({ projects: updated, pendingChanges: true });
+}
+
+function deleteTodo(id) {
+  var proj = state.activeProject;
+  var updated = Object.assign({}, state.projects);
+  updated[proj] = (updated[proj] || []).filter(function(item) { return item.id !== id; });
+  localStorage.setItem('cq_projects', JSON.stringify(updated));
+  setState({ projects: updated, pendingChanges: true });
+}
+
+function addTodo(text, project) {
+  if (!text.trim() || !project) return;
+  var updated = Object.assign({}, state.projects);
+  var newItem = {
+    id: genId(),
+    text: text.trim(),
+    status: 'backlog',
+    added: new Date().toISOString()
+  };
+  updated[project] = [newItem].concat(updated[project] || []);
+  localStorage.setItem('cq_projects', JSON.stringify(updated));
+  setState({ projects: updated, pendingChanges: true, sheetAdd: false, activeProject: project });
+  document.getElementById('add-text').value = '';
+}
+
+function addProject(name) {
+  name = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  if (!name || state.projects[name]) return;
+  var updated = Object.assign({}, state.projects);
+  updated[name] = [];
+  localStorage.setItem('cq_projects', JSON.stringify(updated));
+  setState({ projects: updated, pendingChanges: true, sheetProject: false, activeProject: name });
+  document.getElementById('project-name').value = '';
+}
+
+// -- Event listeners --
+document.getElementById('btn-connect').addEventListener('click', async function() {
+  var errEl = document.getElementById('setup-error');
+  errEl.textContent = '';
+  var config = {
+    pat: document.getElementById('s-pat').value.trim(),
+    owner: document.getElementById('s-owner').value.trim(),
+    repo: document.getElementById('s-repo').value.trim(),
+    branch: document.getElementById('s-branch').value.trim(),
+    path: document.getElementById('s-path').value.trim()
+  };
+  if (!config.pat || !config.owner) {
+    errEl.textContent = 'PAT and owner are required.';
+    return;
+  }
+  this.textContent = 'Connecting...';
+  this.disabled = true;
+  try {
+    state = Object.assign({}, state, { config: config });
+    var result = await fetchTodos();
+    localStorage.setItem('cq_config', JSON.stringify(config));
+    localStorage.setItem('cq_projects', JSON.stringify(result.projects));
+    localStorage.setItem('cq_sha', result.sha);
+    var now = new Date().toISOString();
+    localStorage.setItem('cq_lastSync', now);
+    var first = Object.keys(result.projects)[0] || null;
+    setState({
+      screen: 'main', projects: result.projects, sha: result.sha,
+      activeProject: first, lastSync: now
+    });
+  } catch (e) {
+    errEl.textContent = 'Connection failed: ' + e.message;
+  }
+  this.textContent = 'Connect';
+  this.disabled = false;
+});
+
+document.getElementById('btn-sync').addEventListener('click', function() { sync(); });
+document.getElementById('btn-settings').addEventListener('click', function() { setState({ settingsOpen: true }); });
+document.getElementById('btn-settings-close').addEventListener('click', function() { setState({ settingsOpen: false }); });
+document.getElementById('btn-add').addEventListener('click', function() {
+  if (Object.keys(state.projects).length === 0) {
+    setState({ sheetProject: true });
+  } else {
+    setState({ sheetAdd: true });
+  }
+});
+
+document.getElementById('overlay-add').addEventListener('click', function() { setState({ sheetAdd: false }); });
+document.getElementById('overlay-project').addEventListener('click', function() { setState({ sheetProject: false }); });
+
+document.getElementById('btn-add-save').addEventListener('click', function() {
+  addTodo(document.getElementById('add-text').value, document.getElementById('add-project').value);
+});
+
+document.getElementById('btn-project-save').addEventListener('click', function() {
+  addProject(document.getElementById('project-name').value);
+});
+
+document.getElementById('btn-settings-save').addEventListener('click', function() {
+  var config = {
+    pat: document.getElementById('cfg-pat').value.trim(),
+    owner: document.getElementById('cfg-owner').value.trim(),
+    repo: document.getElementById('cfg-repo').value.trim(),
+    branch: document.getElementById('cfg-branch').value.trim(),
+    path: document.getElementById('cfg-path').value.trim()
+  };
+  localStorage.setItem('cq_config', JSON.stringify(config));
+  setState({ config: config, settingsOpen: false });
+});
+
+document.getElementById('btn-signout').addEventListener('click', function() {
+  localStorage.removeItem('cq_config');
+  localStorage.removeItem('cq_projects');
+  localStorage.removeItem('cq_sha');
+  localStorage.removeItem('cq_lastSync');
+  setState({
+    screen: 'setup', config: null, projects: {}, sha: null,
+    activeProject: null, settingsOpen: false, lastSync: null, pendingChanges: false
+  });
+});
+
+// Delegated clicks for tabs
+document.getElementById('tabs').addEventListener('click', function(e) {
+  var tab = e.target.closest('.tab');
+  if (!tab) return;
+  if (tab.id === 'tab-add-project') {
+    setState({ sheetProject: true });
+  } else if (tab.dataset.project) {
+    setState({ activeProject: tab.dataset.project });
+  }
+});
+
+// Delegated clicks for filters
+document.getElementById('filters').addEventListener('click', function(e) {
+  var chip = e.target.closest('.chip');
+  if (!chip) return;
+  setState({ filter: chip.dataset.filter });
+  document.querySelectorAll('.chip').forEach(function(c) { c.classList.toggle('active', c === chip); });
+});
+
+// Delegated clicks for todo actions
+document.getElementById('todo-list').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  if (btn.dataset.action === 'toggle') toggleTodo(btn.dataset.id);
+  if (btn.dataset.action === 'delete') deleteTodo(btn.dataset.id);
+});
+
+// Online/offline
+window.addEventListener('online', function() { setState({ online: true }); sync(); });
+window.addEventListener('offline', function() { setState({ online: false }); });
+
+// Auto-sync when pending changes and coming back online or on visibility change
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && state.config && state.online) sync();
+});
+
+// -- Init --
+(function init() {
+  var saved = localStorage.getItem('cq_config');
+  if (saved) {
+    try {
+      var config = JSON.parse(saved);
+      var projects = JSON.parse(localStorage.getItem('cq_projects') || '{}');
+      var sha = localStorage.getItem('cq_sha');
+      var lastSync = localStorage.getItem('cq_lastSync');
+      var first = Object.keys(projects)[0] || null;
+      setState({
+        screen: 'main', config: config, projects: projects, sha: sha,
+        activeProject: first, lastSync: lastSync, online: navigator.onLine
+      });
+      if (navigator.onLine) sync();
+    } catch (e) {
+      console.error('Failed to restore state:', e);
+    }
+  }
+})();
+
+// -- Service Worker registration --
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function() {
+    // SW not available, that is fine for a single-file app
+  });
+}
+</script>
+</body>
+</html>
