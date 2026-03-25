@@ -46,11 +46,19 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;background:var(--card);color:var(--text-muted);border:1px solid #ddd;min-height:34px}
 .chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 
+/* Quick add bar */
+.quick-add{display:flex;gap:8px;padding:10px 16px;background:var(--bg);position:sticky;top:0;z-index:10}
+.quick-add input{flex:1;padding:10px 14px;border:1px solid #ddd;border-radius:var(--radius);font-size:15px;background:var(--card);min-height:44px}
+.quick-add input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,147,58,.2)}
+.quick-add button{width:44px;height:44px;border-radius:var(--radius);background:var(--gold);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.quick-add button:active{background:#a07e2f}
+
 /* Todo list */
 .todo-list{padding:8px 16px 120px;display:flex;flex-direction:column;gap:8px}
 .todo-item{background:var(--card);border-radius:var(--radius);padding:12px;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .2s,opacity .2s}
 .todo-item.removing{transform:translateX(-100%);opacity:0}
-.todo-check{width:24px;height:24px;border:2px solid #ccc;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;min-width:24px;min-height:24px;padding:10px}
+.todo-check{width:28px;height:28px;border:2.5px solid #bbb;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;min-width:28px;min-height:28px;padding:10px;transition:all .15s}
+.todo-check:active{transform:scale(.85)}
 .todo-check.checked{background:var(--gold);border-color:var(--gold)}
 .todo-check.checked::after{content:'';display:block;width:6px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
 .todo-body{flex:1;min-width:0}
@@ -143,6 +151,10 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
     <button class="chip active" data-filter="backlog">Backlog</button>
     <button class="chip" data-filter="done">Done</button>
     <button class="chip" data-filter="all">All</button>
+  </div>
+  <div class="quick-add" id="quick-add">
+    <input type="text" id="quick-add-input" placeholder="Add a todo..." enterkeyhint="send">
+    <button id="btn-quick-add" aria-label="Add">+</button>
   </div>
   <div class="todo-list" id="todo-list"></div>
   <button class="fab" id="btn-add" aria-label="Add todo">+</button>
@@ -337,6 +349,9 @@ function render() {
   // Tabs
   renderTabs();
 
+  // Quick add visibility
+  document.getElementById('quick-add').classList.toggle('hidden', !state.activeProject);
+
   // Todo list
   renderTodos();
 
@@ -427,6 +442,13 @@ function toggleSheet(overlayId, sheetId, open) {
   document.getElementById(sheetId).classList.toggle('open', open);
 }
 
+// -- Auto-sync debounce --
+var syncTimer = null;
+function scheduleSync() {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(function() { if (state.online) sync(); }, 1500);
+}
+
 // -- Actions (immutable updates) --
 function toggleTodo(id) {
   var proj = state.activeProject;
@@ -437,6 +459,7 @@ function toggleTodo(id) {
   });
   localStorage.setItem('cq_projects', JSON.stringify(updated));
   setState({ projects: updated, pendingChanges: true });
+  scheduleSync();
 }
 
 function deleteTodo(id) {
@@ -445,6 +468,7 @@ function deleteTodo(id) {
   updated[proj] = (updated[proj] || []).filter(function(item) { return item.id !== id; });
   localStorage.setItem('cq_projects', JSON.stringify(updated));
   setState({ projects: updated, pendingChanges: true });
+  scheduleSync();
 }
 
 function addTodo(text, project) {
@@ -459,6 +483,7 @@ function addTodo(text, project) {
   updated[project] = [newItem].concat(updated[project] || []);
   localStorage.setItem('cq_projects', JSON.stringify(updated));
   setState({ projects: updated, pendingChanges: true, sheetAdd: false, activeProject: project });
+  scheduleSync();
   document.getElementById('add-text').value = '';
 }
 
@@ -517,6 +542,20 @@ document.getElementById('btn-add').addEventListener('click', function() {
     setState({ sheetProject: true });
   } else {
     setState({ sheetAdd: true });
+  }
+});
+
+document.getElementById('btn-quick-add').addEventListener('click', function() {
+  var input = document.getElementById('quick-add-input');
+  if (input.value.trim() && state.activeProject) {
+    addTodo(input.value, state.activeProject);
+    input.value = '';
+  }
+});
+document.getElementById('quick-add-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && this.value.trim() && state.activeProject) {
+    addTodo(this.value, state.activeProject);
+    this.value = '';
   }
 });
 
