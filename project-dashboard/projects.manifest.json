@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "description": "Project classification for the Project Dashboard portal. See portal-launch-instructions.md for the contract the portal enforces. Edit 'owns' fields to tailor the system prompt per project.",
+  "updated": "2026-04-22",
+  "projects": [
+    {
+      "name": "ciportal",
+      "cwd": "/home/ian/ciportal",
+      "status": "active",
+      "kind": "Next.js app",
+      "port": 3003,
+      "pm2": "ciportal",
+      "owns": "internal CI portal frontend",
+      "location": "remote"
+    },
+    {
+      "name": "ci2.0",
+      "cwd": "/home/ian/projects/ci2.0",
+      "status": "active",
+      "kind": "FastAPI service",
+      "port": 8100,
+      "pm2": "ci2.0",
+      "owns": "CI backend API v2",
+      "location": "remote"
+    },
+    {
+      "name": "brand-wiki",
+      "cwd": "/home/ian/brand-wiki",
+      "status": "active",
+      "kind": "Python pipeline",
+      "port": null,
+      "pm2": null,
+      "owns": "brand wiki data pipeline",
+      "location": "remote"
+    },
+    {
+      "name": "theswarm",
+      "cwd": "/home/ian/theswarm",
+      "status": "active",
+      "kind": "Python service (swarm predictor)",
+      "port": null,
+      "pm2": null,
+      "owns": "swarm prediction model",
+      "location": "remote"
+    },
+    {
+      "name": "gocoroi",
+      "cwd": "/home/ian/gocoroi",
+      "status": "active",
+      "kind": "Streamlit app",
+      "port": 8503,
+      "pm2": "gocoroi",
+      "owns": "GoCompare ROI analysis dashboard",
+      "location": "remote"
+    },
+    {
+      "name": "ibt3",
+      "cwd": "/home/ian/ibt3",
+      "status": "active",
+      "kind": "Streamlit app",
+      "port": 8502,
+      "pm2": "ibt3",
+      "owns": "IBT3 dashboard",
+      "location": "remote"
+    },
+    {
+      "name": "amicovered",
+      "cwd": "/home/ian/amicovered",
+      "status": "active",
+      "kind": "Python service",
+      "port": null,
+      "pm2": null,
+      "owns": "amicovered insurance coverage tool",
+      "location": "remote"
+    },
+    {
+      "name": "product-data",
+      "cwd": "/home/ian/product-data",
+      "status": "active",
+      "kind": "web service",
+      "port": 3004,
+      "pm2": "product-data",
+      "owns": "product data service",
+      "location": "remote"
+    },
+    {
+      "name": "britgrid",
+      "cwd": "/home/ian/britgrid",
+      "status": "active",
+      "kind": "Next.js app (GCP-hosted)",
+      "port": 3000,
+      "pm2": "britgrid",
+      "owns": "BritGrid public site",
+      "location": "remote"
+    },
+    {
+      "name": "plaud-pipeline",
+      "cwd": "/home/ian/plaud-pipeline",
+      "status": "active",
+      "kind": "n8n workflow host",
+      "port": 5678,
+      "pm2": "plaud-pipeline",
+      "owns": "Plaud ingestion pipeline (n8n)",
+      "location": "remote"
+    },
+    {
+      "name": "gtm-warroom",
+      "cwd": "/home/ian/gtm-warroom",
+      "status": "active",
+      "kind": "Next.js app",
+      "port": 3002,
+      "pm2": "gtm-warroom",
+      "owns": "GTM war room dashboard",
+      "location": "remote"
+    },
+    {
+      "name": "ff-dashboard",
+      "cwd": "/home/ian/ff-dashboard",
+      "status": "active",
+      "kind": "Next.js app",
+      "port": 3001,
+      "pm2": "ff-dashboard",
+      "owns": "Fast-follow dashboard",
+      "location": "remote"
+    },
+    {
+      "name": "mirofish",
+      "cwd": "/home/ian/mirofish",
+      "status": "active",
+      "kind": "Node service",
+      "port": null,
+      "pm2": null,
+      "owns": "mirofish tooling",
+      "location": "remote"
+    },
+    {
+      "name": "vetcompare",
+      "cwd": "/home/ian/vetcompare",
+      "status": "active",
+      "kind": "Python service",
+      "port": null,
+      "pm2": null,
+      "owns": "VetCompare comparison tool",
+      "location": "remote"
+    },
+    {
+      "name": "dotfiles",
+      "cwd": "/home/ian/dotfiles",
+      "status": "active",
+      "kind": "config repo",
+      "port": null,
+      "pm2": null,
+      "owns": "shell and editor dotfiles",
+      "location": "remote"
+    },
+    {
+      "name": "optimisation",
+      "cwd": "/home/ian/optimisation",
+      "status": "active",
+      "kind": "workspace",
+      "port": null,
+      "pm2": null,
+      "owns": "general optimisation workspace",
+      "location": "remote"
+    },
+    {
+      "name": "ci-portal",
+      "cwd": "/home/ian/ci-portal",
+      "status": "archive",
+      "kind": "legacy Next.js app (superseded by ciportal)",
+      "port": null,
+      "pm2": null,
+      "owns": "archived — do not launch",
+      "location": "remote"
+    },
+    {
+      "name": "plaudpull",
+      "cwd": "/home/ian/plaudpull",
+      "status": "archive",
+      "kind": "legacy Plaud puller (superseded by plaud-pipeline)",
+      "port": null,
+      "pm2": null,
+      "owns": "archived — do not launch",
+      "location": "remote"
+    },
+    {
+      "name": "plaudingest",
+      "cwd": "/home/ian/plaudingest",
+      "status": "archive",
+      "kind": "legacy Plaud ingest (superseded by plaud-pipeline)",
+      "port": null,
+      "pm2": null,
+      "owns": "archived — do not launch",
+      "location": "remote"
+    },
+    {
+      "name": "plaud-search",
+      "cwd": "/home/ian/plaud-search",
+      "status": "archive",
+      "kind": "legacy Plaud search",
+      "port": null,
+      "pm2": null,
+      "owns": "archived — do not launch",
+      "location": "remote"
+    },
+    {
+      "name": "gocoextract",
+      "cwd": "/home/ian/gocoextract",
+      "status": "archive",
+      "kind": "legacy GoCompare extractor (superseded by gocoroi)",
+      "port": null,
+      "pm2": null,
+      "owns": "archived — do not launch",
+      "location": "remote"
+    },
+    {
+      "name": "ci-portal-reference",
+      "cwd": "/home/ian/ci-portal-reference",
+      "status": "reference",
+      "kind": "read-only reference copy of the old ci-portal",
+      "port": null,
+      "pm2": null,
+      "owns": "historical reference — do not modify",
+      "location": "remote"
+    },
+    {
+      "name": "ai-at-ci",
+      "cwd": "/home/ian/ai-at-ci",
+      "status": "reference",
+      "kind": "read-only notes on AI use at CI",
+      "port": null,
+      "pm2": null,
+      "owns": "internal AI reference material — do not modify",
+      "location": "remote"
+    },
+    {
+      "name": "OKRs",
+      "cwd": "/home/ian/OKRs",
+      "status": "reference",
+      "kind": "read-only OKR documents",
+      "port": null,
+      "pm2": null,
+      "owns": "quarterly OKR records — do not modify",
+      "location": "remote"
+    },
+    {
+      "name": "knowledge_base",
+      "cwd": "/home/ian/knowledge_base",
+      "status": "reference",
+      "kind": "read-only knowledge base",
+      "port": null,
+      "pm2": null,
+      "owns": "internal knowledge base — do not modify",
+      "location": "remote"
+    },
+    {
+      "name": "ci-shared-infra",
+      "cwd": "/home/ian/ci-shared-infra",
+      "status": "infra",
+      "kind": "shared infrastructure (nginx, PM2 config, etc.)",
+      "port": null,
+      "pm2": null,
+      "owns": "shared infra — hidden from portal",
+      "location": "remote"
+    }
+  ]
+}
